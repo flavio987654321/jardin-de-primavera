@@ -387,6 +387,7 @@
       if (mensaje) urlCfg.mensaje = mensaje;
       if (['dia', 'atardecer', 'noche'].includes(modo)) urlCfg.modo = modo;
       if (params.get('edit') === '1') urlCfg.editMode = true;
+      if (titulo || mensaje || modo) urlCfg.personalizado = true;
     } catch (e) {}
     return Object.assign(base, urlCfg);
   }
@@ -1635,8 +1636,8 @@
     const params = new URLSearchParams(location.search);
     const isEditMode = params.get('edit') === '1';
 
-    botonPersonalizar.hidden = false;
     if (isEditMode) {
+      botonPersonalizar.hidden = false;
       abrirEditor();
       return;
     }
@@ -1658,7 +1659,7 @@
     } catch (e) {}
     if (!puedeEditar) return;
     publicar = artifact;
-    botonPersonalizar.hidden = false;
+    botonPersonalizar.hidden = !CONFIG.personalizado;
     if (!CONFIG.personalizado) abrirEditor();
   })();
 })();
