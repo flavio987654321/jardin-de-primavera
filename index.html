@@ -366,19 +366,7 @@
   };
   function leerConfig() {
     const base = { ...CONFIG_DEFECTO };
-    try {
-      const params = new URLSearchParams(location.search);
-      const urlCfg = {};
-      const titulo = params.get('title');
-      const mensaje = params.get('message');
-      const modo = params.get('mode');
-      const edit = params.get('edit');
-      if (titulo) urlCfg.titulo = titulo;
-      if (mensaje) urlCfg.mensaje = mensaje;
-      if (modo && modo in MODOS) urlCfg.modo = modo;
-      if (edit === '1') urlCfg.editMode = true;
-      Object.assign(base, urlCfg);
-    } catch (e) {}
+    const urlCfg = {};
     try {
       const guardado = localStorage.getItem('jardin-config');
       if (guardado) Object.assign(base, JSON.parse(guardado));
@@ -386,10 +374,21 @@
     try {
       const el = document.getElementById('config');
       const c = JSON.parse(el.textContent);
-      return Object.assign({}, base, c);
+      Object.assign(base, c);
     } catch (e) {
-      return base;
+      // Mantener los valores disponibles si la configuración embebida no existe.
     }
+    try {
+      const params = new URLSearchParams(location.search);
+      const titulo = params.get('title');
+      const mensaje = params.get('message');
+      const modo = params.get('mode');
+      if (titulo) urlCfg.titulo = titulo;
+      if (mensaje) urlCfg.mensaje = mensaje;
+      if (['dia', 'atardecer', 'noche'].includes(modo)) urlCfg.modo = modo;
+      if (params.get('edit') === '1') urlCfg.editMode = true;
+    } catch (e) {}
+    return Object.assign(base, urlCfg);
   }
   let CONFIG = leerConfig();
 
