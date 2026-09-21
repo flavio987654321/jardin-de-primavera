@@ -136,6 +136,11 @@
     justify-content: center;
     gap: 8px;
   }
+  .boton-portapapeles::before {
+    content: "📋";
+    font-size: 1.05em;
+    line-height: 1;
+  }
 
   /* ---- editor (modal) ---- */
   dialog.editor {
@@ -310,7 +315,7 @@
 
       <div class="editor-acciones">
         <button type="button" id="cancelar">Cancelar</button>
-        <button type="button" class="principal boton-portapapeles" id="guardar">📋 Guardar y publicar</button>
+        <button type="button" class="principal boton-portapapeles" id="guardar">Guardar y publicar</button>
       </div>
     </form>
   </dialog>
@@ -1540,11 +1545,11 @@
     }
 
     if (!publicar) {
-      botonGuardar.textContent = '📋 Link listo ✓';
+      botonGuardar.textContent = '✅ Link copiado';
       alert(`Link para compartir:\n${link}`);
       setTimeout(() => {
         botonGuardar.disabled = false;
-        botonGuardar.textContent = '📋 Guardar y publicar';
+        botonGuardar.textContent = 'Guardar y publicar';
         cerrarEditor(false);
       }, 500);
       return;
