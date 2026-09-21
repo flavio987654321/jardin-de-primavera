@@ -255,6 +255,21 @@
   .editor-acciones { display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap; }
   .editor-acciones button { box-shadow: none; }
   .editor-acciones button:not(.principal) { background: #eef3ea; color: #2c5a36; }
+  dialog.compartir {
+    border: 0;
+    border-radius: 18px;
+    padding: 22px;
+    width: min(460px, calc(100% - 32px));
+    background: var(--paper-solid);
+    color: #2c5a36;
+    box-shadow: 0 30px 80px rgba(20, 40, 20, 0.35);
+  }
+  dialog.compartir::backdrop { background: rgba(10, 25, 10, 0.45); backdrop-filter: blur(3px); }
+  .compartir h2 { margin: 0 0 8px; font-family: "Fraunces", "Georgia", serif; font-style: italic; font-weight: 500; }
+  .compartir p { margin: 0 0 14px; color: #5b7d63; }
+  .compartir-link { display: flex; gap: 8px; align-items: stretch; }
+  .compartir-link input { min-width: 0; flex: 1; font: inherit; font-size: 0.82rem; padding: 10px; border: 1px solid rgba(44, 90, 54, 0.25); border-radius: 10px; color: #234a2c; background: #fff; }
+  .compartir-acciones { display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px; }
 
   @media (prefers-reduced-motion: reduce) {
     .titulo h1, .titulo p { animation: none; }
@@ -318,6 +333,18 @@
         <button type="button" class="principal boton-portapapeles" id="guardar">Guardar y publicar</button>
       </div>
     </form>
+  </dialog>
+
+  <dialog class="compartir" id="compartir" aria-labelledby="compartir-titulo">
+    <h2 id="compartir-titulo">Tu jardín ya está publicado</h2>
+    <p>Copiá este link y mandáselo a quien quieras:</p>
+    <div class="compartir-link">
+      <input type="text" id="link-compartir" readonly aria-label="Link para compartir">
+      <button type="button" class="principal" id="copiar-link">Copiar</button>
+    </div>
+    <div class="compartir-acciones">
+      <button type="button" id="cerrar-compartir">Listo</button>
+    </div>
   </dialog>
 </template>
 
@@ -1445,6 +1472,10 @@
   const quitarMusica = $('quitar-musica');
   const editorError = $('editor-error');
   const botonGuardar = $('guardar');
+  const dialogoCompartir = $('compartir');
+  const linkCompartir = $('link-compartir');
+  const copiarLink = $('copiar-link');
+  const cerrarCompartir = $('cerrar-compartir');
   const LIMITE_MUSICA = 7 * 1024 * 1024;
   let publicar = null;    // namespace `artifact` cuando está disponible
   let borrador = null;
@@ -1518,6 +1549,23 @@
   editor.addEventListener('cancel', e => { e.preventDefault(); cerrarEditor(true); });
   botonPersonalizar.addEventListener('click', abrirEditor);
 
+  function mostrarCompartir(link) {
+    linkCompartir.value = link;
+    if (!dialogoCompartir.open) dialogoCompartir.showModal();
+  }
+  copiarLink.addEventListener('click', async () => {
+    linkCompartir.select();
+    try {
+      await navigator.clipboard.writeText(linkCompartir.value);
+      copiarLink.textContent = 'Copiado ✓';
+    } catch (e) {
+      document.execCommand('copy');
+      copiarLink.textContent = 'Copiado ✓';
+    }
+    setTimeout(() => { copiarLink.textContent = 'Copiar'; }, 1400);
+  });
+  cerrarCompartir.addEventListener('click', () => dialogoCompartir.close());
+
   botonGuardar.addEventListener('click', async () => {
     mostrarError('');
     const cfg = {
@@ -1546,11 +1594,11 @@
 
     if (!publicar) {
       botonGuardar.textContent = '✅ Link copiado';
-      alert(`Link para compartir:\n${link}`);
       setTimeout(() => {
         botonGuardar.disabled = false;
         botonGuardar.textContent = 'Guardar y publicar';
         cerrarEditor(false);
+        mostrarCompartir(link);
       }, 500);
       return;
     }
