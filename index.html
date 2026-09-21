@@ -1,0 +1,1598 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Jardín de Primavera</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@1,9..144,500&family=Nunito:wght@400;600;700&display=swap">
+<style id="estilos">
+  :root {
+    --ink: #2c5a36;
+    --ink-soft: #4f7a58;
+    --paper: rgba(255, 252, 240, 0.78);
+    --paper-solid: #fffdf5;
+    --accent: #ffcf3f;
+    --accent-deep: #b8651e;
+    --sombra-titulo: 0 2px 0 rgba(255,255,255,0.7), 0 10px 30px rgba(255, 207, 63, 0.35);
+    --fondo: #f7e6c4;
+  }
+  body[data-modo="atardecer"] {
+    --ink: #4b2436;
+    --ink-soft: #6b3f4c;
+    --sombra-titulo: 0 2px 0 rgba(255,240,220,0.6), 0 10px 30px rgba(255, 160, 80, 0.4);
+    --fondo: #ffe0a3;
+  }
+  body[data-modo="noche"] {
+    --ink: #f3eedb;
+    --ink-soft: #b9c4dd;
+    --paper: rgba(20, 28, 50, 0.72);
+    --sombra-titulo: 0 2px 0 rgba(0,0,0,0.35), 0 10px 30px rgba(120, 150, 255, 0.35);
+    --fondo: #101a44;
+  }
+  [hidden] { display: none !important; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    background: var(--fondo);
+    color: var(--ink);
+    font-family: "Nunito", "Segoe UI", system-ui, sans-serif;
+    overflow: hidden;
+    overscroll-behavior: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  #jardin {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+    touch-action: none;
+    cursor: crosshair;
+  }
+  .titulo {
+    position: fixed;
+    top: max(24px, env(safe-area-inset-top, 0px));
+    left: 0; right: 0;
+    padding-inline: 16px;
+    text-align: center;
+    pointer-events: none;
+    user-select: none;
+  }
+  .titulo h1 {
+    margin: 0 auto;
+    max-width: 14ch;
+    font-family: "Fraunces", "Georgia", serif;
+    font-style: italic;
+    font-weight: 500;
+    font-size: clamp(2.2rem, 7vw, 4.4rem);
+    line-height: 1.05;
+    letter-spacing: -0.01em;
+    text-wrap: balance;
+    color: var(--ink);
+    text-shadow: var(--sombra-titulo);
+    animation: aparecer 1.2s ease-out both;
+  }
+  .titulo p {
+    margin: 10px auto 0;
+    max-width: 44ch;
+    font-size: clamp(0.95rem, 2.4vw, 1.15rem);
+    font-weight: 600;
+    color: var(--ink-soft);
+    text-wrap: balance;
+    transition: opacity 0.8s ease;
+    animation: aparecer 1.2s 0.3s ease-out both;
+  }
+  .titulo p.oculto { opacity: 0; }
+  @keyframes aparecer {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: none; }
+  }
+  .panel {
+    position: fixed;
+    bottom: max(16px, env(safe-area-inset-bottom, 0px));
+    left: 16px; right: 16px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    pointer-events: none;
+  }
+  .panel > * { pointer-events: auto; }
+  .contador {
+    background: var(--paper);
+    backdrop-filter: blur(6px);
+    border-radius: 999px;
+    padding: 8px 14px;
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+    box-shadow: 0 2px 10px rgba(44, 90, 54, 0.12);
+  }
+  button {
+    font: inherit;
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: var(--ink);
+    background: var(--paper);
+    backdrop-filter: blur(6px);
+    border: 0;
+    border-radius: 999px;
+    padding: 9px 16px;
+    cursor: pointer;
+    box-shadow: 0 2px 10px rgba(44, 90, 54, 0.12);
+    transition: transform 0.15s ease, background 0.15s ease, opacity 0.15s ease;
+  }
+  button:hover { transform: translateY(-1px); }
+  button:active { transform: translateY(1px) scale(0.98); }
+  button:disabled { opacity: 0.6; cursor: default; transform: none; }
+  button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+  button.principal { background: var(--accent); color: #4a2f0a; }
+  button.principal:hover { background: #ffd95e; }
+
+  /* ---- editor (modal) ---- */
+  dialog.editor {
+    border: 0;
+    border-radius: 22px;
+    padding: 0;
+    width: min(460px, calc(100% - 32px));
+    max-height: calc(100% - 32px);
+    background: var(--paper-solid);
+    color: #2c5a36;
+    box-shadow: 0 30px 80px rgba(20, 40, 20, 0.35);
+    overflow: auto;
+  }
+  dialog.editor::backdrop {
+    background: rgba(10, 25, 10, 0.45);
+    backdrop-filter: blur(3px);
+  }
+  .editor-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 24px;
+  }
+  .editor-form h2 {
+    margin: 0;
+    font-family: "Fraunces", "Georgia", serif;
+    font-style: italic;
+    font-weight: 500;
+    font-size: 1.7rem;
+    line-height: 1.1;
+    color: #2c5a36;
+  }
+  .editor-sub { margin: -8px 0 0; font-size: 0.9rem; color: #5b7d63; }
+  .campo { display: flex; flex-direction: column; gap: 6px; }
+  .etiqueta {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #5b7d63;
+  }
+  .campo input[type="text"] {
+    font: inherit;
+    font-size: 1rem;
+    padding: 10px 12px;
+    border: 1.5px solid rgba(44, 90, 54, 0.25);
+    border-radius: 12px;
+    background: #fff;
+    color: #234a2c;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  .campo input[type="text"]:focus-visible { outline: 3px solid var(--accent); outline-offset: 1px; border-color: transparent; }
+  .modos {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    border: 0;
+    padding: 0;
+    margin: 0;
+  }
+  .modo {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 6px 10px;
+    border-radius: 14px;
+    border: 2px solid rgba(44, 90, 54, 0.15);
+    background: #fff;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #2c5a36;
+    transition: border-color 0.15s ease, transform 0.15s ease;
+  }
+  .modo:hover { transform: translateY(-1px); }
+  .modo input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+  .modo:has(input:checked) { border-color: var(--accent-deep); box-shadow: 0 0 0 3px rgba(255, 207, 63, 0.45); }
+  .modo:has(input:focus-visible) { outline: 3px solid var(--accent); outline-offset: 2px; }
+  .muestra { width: 100%; height: 46px; border-radius: 9px; }
+  .muestra-dia { background: linear-gradient(180deg, #5fa9e3 0%, #b9dff3 55%, #f7e6c4 70%, #8fc75f 72%, #5c9c3b 100%); }
+  .muestra-atardecer { background: linear-gradient(180deg, #3d4f9a 0%, #e08a7a 45%, #ffd58a 68%, #6f9a45 72%, #3a6f28 100%); }
+  .muestra-noche { background: linear-gradient(180deg, #070b22 0%, #1f2f63 60%, #3a4a7c 68%, #22482a 72%, #123216 100%); }
+  .musica-fila { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .boton-archivo {
+    display: inline-block;
+    font-weight: 700;
+    font-size: 0.9rem;
+    padding: 9px 14px;
+    border-radius: 999px;
+    background: #e9f3e4;
+    color: #2c5a36;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(44, 90, 54, 0.1);
+  }
+  .boton-archivo:hover { background: #dfeed8; }
+  .boton-archivo:has(input:focus-visible) { outline: 3px solid var(--accent); outline-offset: 2px; }
+  .musica-nombre { font-size: 0.9rem; color: #234a2c; overflow-wrap: anywhere; }
+  .musica-quitar { padding: 6px 12px; font-size: 0.8rem; box-shadow: none; background: #f4e4e4; color: #7a2a2a; }
+  .ayuda { margin: 0; font-size: 0.78rem; color: #6b8a71; }
+  .editor-error {
+    margin: 0;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: #fbe7e4;
+    color: #8a2f25;
+    font-size: 0.88rem;
+    font-weight: 600;
+  }
+  .editor-acciones { display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap; }
+  .editor-acciones button { box-shadow: none; }
+  .editor-acciones button:not(.principal) { background: #eef3ea; color: #2c5a36; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .titulo h1, .titulo p { animation: none; }
+  }
+</style>
+</head>
+<body>
+<template id="marcado">
+  <canvas id="jardin" aria-label="Jardín interactivo: tocá para plantar flores"></canvas>
+
+  <div class="titulo">
+    <h1 id="saludo">Feliz primavera</h1>
+    <p id="pista">Tocá la pantalla y mirá cómo florece</p>
+  </div>
+
+  <div class="panel">
+    <span class="contador" id="contador">0 flores</span>
+    <button class="principal" id="sembrar" type="button">Sembrar el jardín</button>
+    <button id="limpiar" type="button">Limpiar</button>
+    <button id="musica" type="button" hidden>♪ Música</button>
+    <button id="personalizar" type="button" hidden>Personalizar</button>
+  </div>
+
+  <dialog class="editor" id="editor" aria-labelledby="editor-titulo">
+    <form class="editor-form" method="dialog">
+      <h2 id="editor-titulo">Personalizá tu jardín</h2>
+      <p class="editor-sub">Lo que guardes acá es lo que va a ver quien abra el link.</p>
+
+      <div class="campo">
+        <label class="etiqueta" for="campo-titulo">Título</label>
+        <input type="text" id="campo-titulo" maxlength="40" autocomplete="off" placeholder="Feliz primavera">
+      </div>
+      <div class="campo">
+        <label class="etiqueta" for="campo-mensaje">Mensaje</label>
+        <input type="text" id="campo-mensaje" maxlength="90" autocomplete="off" placeholder="Tocá la pantalla y mirá cómo florece">
+      </div>
+
+      <div class="campo">
+        <span class="etiqueta">Momento del día</span>
+        <fieldset class="modos">
+          <label class="modo"><input type="radio" name="modo" value="dia" id="modo-dia"><span class="muestra muestra-dia"></span>Día</label>
+          <label class="modo"><input type="radio" name="modo" value="atardecer" id="modo-atardecer"><span class="muestra muestra-atardecer"></span>Atardecer</label>
+          <label class="modo"><input type="radio" name="modo" value="noche" id="modo-noche"><span class="muestra muestra-noche"></span>Noche</label>
+        </fieldset>
+      </div>
+
+      <div class="campo">
+        <span class="etiqueta">Música</span>
+        <div class="musica-fila">
+          <label class="boton-archivo">Elegir archivo<input type="file" id="campo-musica" accept="audio/*" hidden></label>
+          <span class="musica-nombre" id="musica-nombre">Sin música</span>
+          <button type="button" class="musica-quitar" id="quitar-musica" hidden>Quitar</button>
+        </div>
+        <p class="ayuda">MP3 o similar, hasta 7 MB. Empieza a sonar con el primer toque en la pantalla.</p>
+      </div>
+
+      <p class="editor-error" id="editor-error" hidden></p>
+
+      <div class="editor-acciones">
+        <button type="button" id="cancelar">Cancelar</button>
+        <button type="button" class="principal" id="guardar">Guardar y publicar</button>
+      </div>
+    </form>
+  </dialog>
+</template>
+
+<script id="config" type="application/json">{"titulo":"Feliz primavera","mensaje":"Tocá la pantalla y mirá cómo florece","modo":"dia","musica":null,"personalizado":false}</script>
+
+<script id="app">
+(() => {
+  // =====================================================================
+  //  Configuración: vive en el bloque <script id="config"> del documento.
+  //  Al guardar, la página se vuelve a publicar completa con la nueva
+  //  configuración, así quien abra el link ve la versión personalizada.
+  // =====================================================================
+  const CONFIG_DEFECTO = {
+    titulo: 'Feliz primavera',
+    mensaje: 'Tocá la pantalla y mirá cómo florece',
+    modo: 'dia',
+    musica: null,          // { nombre, dataUrl }
+    personalizado: false,
+  };
+  function leerConfig() {
+    const base = { ...CONFIG_DEFECTO };
+    try {
+      const params = new URLSearchParams(location.search);
+      const urlCfg = {};
+      const titulo = params.get('title');
+      const mensaje = params.get('message');
+      const modo = params.get('mode');
+      const edit = params.get('edit');
+      if (titulo) urlCfg.titulo = titulo;
+      if (mensaje) urlCfg.mensaje = mensaje;
+      if (modo && modo in MODOS) urlCfg.modo = modo;
+      if (edit === '1') urlCfg.editMode = true;
+      Object.assign(base, urlCfg);
+    } catch (e) {}
+    try {
+      const guardado = localStorage.getItem('jardin-config');
+      if (guardado) Object.assign(base, JSON.parse(guardado));
+    } catch (e) {}
+    try {
+      const el = document.getElementById('config');
+      const c = JSON.parse(el.textContent);
+      return Object.assign({}, base, c);
+    } catch (e) {
+      return base;
+    }
+  }
+  let CONFIG = leerConfig();
+
+  function guardarConfigLocal(cfg) {
+    try {
+      localStorage.setItem('jardin-config', JSON.stringify(cfg));
+    } catch (e) {}
+    CONFIG = Object.assign({}, CONFIG_DEFECTO, cfg);
+    aplicarConfig(CONFIG);
+  }
+
+  function urlConConfiguracion(cfg) {
+    const params = new URLSearchParams();
+    params.set('title', cfg.titulo || CONFIG_DEFECTO.titulo);
+    params.set('message', cfg.mensaje || CONFIG_DEFECTO.mensaje);
+    params.set('mode', cfg.modo || 'dia');
+    return `${location.origin}${location.pathname}?${params.toString()}`;
+  }
+
+  function mostrarLinkCompartir(cfg) {
+    const link = urlConConfiguracion(cfg);
+    const msg = `Link para compartir:\n${link}`;
+    const original = botonGuardar.textContent;
+    botonGuardar.textContent = 'Link copiado ✓';
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(link).catch(() => {});
+    }
+    alert(msg);
+    setTimeout(() => {
+      botonGuardar.textContent = original;
+    }, 1200);
+    return link;
+  }
+
+  // montar el marcado desde la plantilla
+  document.body.prepend(document.getElementById('marcado').content.cloneNode(true));
+
+  const FUENTES = 'https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@1,9..144,500&family=Nunito:wght@400;600;700&display=swap';
+  function documentoCompleto(cfg) {
+    const json = JSON.stringify(cfg).replace(/</g, '\\u003c');
+    const estilos = document.getElementById('estilos').textContent;
+    const marcado = document.getElementById('marcado').innerHTML;
+    const app = document.getElementById('app').textContent;
+    return '<!doctype html>\n<html lang="es">\n<head>\n<meta charset="utf-8">\n'
+      + '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">\n'
+      + '<title>Jardín de Primavera</title>\n'
+      + '<link rel="stylesheet" href="' + FUENTES + '">\n'
+      + '<style id="estilos">' + estilos + '</style>\n</head>\n<body>\n'
+      + '<template id="marcado">' + marcado + '</template>\n'
+      + '<script id="config" type="application/json">' + json + '<\/script>\n'
+      + '<script id="app">' + app + '<\/script>\n</body>\n</html>\n';
+  }
+
+  // ---------- utilidades ----------
+  const rand = (a, b) => a + Math.random() * (b - a);
+  const elegir = arr => arr[Math.floor(Math.random() * arr.length)];
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const easeOutBack = t => { const c = 1.70158; return 1 + (c + 1) * Math.pow(t - 1, 3) + c * Math.pow(t - 1, 2); };
+  const easeOutCubic = t => 1 - Math.pow(1 - t, 3);
+  const ANGULO_DORADO = 2.39996;
+  const reducirMovimiento = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  const $ = id => document.getElementById(id);
+  const canvas = $('jardin');
+  const ctx = canvas.getContext('2d');
+  const contadorEl = $('contador');
+  const pistaEl = $('pista');
+  const saludoEl = $('saludo');
+
+  // ---------- momentos del día ----------
+  const MODOS = {
+    dia: {
+      cielo: [[0, '#5fa9e3'], [0.45, '#9fd0f0'], [0.85, '#d9ecf3'], [1, '#f7e6c4']],
+      astro: { x: 0.8, y: 0.15, r: 0.075, nucleo: ['#fffbe6', '#ffe89a'], halo: '255,240,180', haloA: 0.95, rayos: true, rayosColor: '255,245,200', rayosA: 0.22 },
+      nubes: { luz: '255,255,255', cuerpo: '250,252,255', sombra: '165,190,215', alpha: 0.95 },
+      montes: '#b9cfd6', lejos: ['#a9c98f', '#8fb87a'], bruma: '230,236,230',
+      medio: ['#9fcc73', '#7fb45c'], arbol: ['#87bd5f', '#4f8a3c', '#4e7d3a'],
+      suelo: ['#a3d46e', '#7fbb52', '#5c9c3b'], briznas: ['#6cae45', '#8ac95a', '#5a9b39', '#9ad46a', '#4f8f33', '#b3df7c'],
+      frente: ['#3f8a2c', '#4e9c36', '#357a25', '#5aa843', '#2f6d20'],
+      luz: { color: '255,230,150', a: 0.28 }, vineta: 0.22, tinte: null,
+      estrellas: false, luciernagas: false, mariposas: true, pajaros: true,
+    },
+    atardecer: {
+      cielo: [[0, '#3d4f9a'], [0.35, '#8f6ea6'], [0.65, '#e08a7a'], [0.88, '#f7b25e'], [1, '#ffe0a3']],
+      astro: { x: 0.7, y: 0.52, r: 0.11, nucleo: ['#fff4d0', '#ffb347'], halo: '255,170,90', haloA: 0.9, rayos: true, rayosColor: '255,200,120', rayosA: 0.2 },
+      nubes: { luz: '255,225,205', cuerpo: '245,190,175', sombra: '150,100,140', alpha: 0.9 },
+      montes: '#8d7fa3', lejos: ['#8a9a6a', '#6f8555'], bruma: '240,200,170',
+      medio: ['#7f9e50', '#5f7f3d'], arbol: ['#6f9a4a', '#3f6a2e', '#3e5f2c'],
+      suelo: ['#94b85a', '#6f9a45', '#4c7a32'], briznas: ['#6d9c3d', '#8ab84e', '#5a8a33', '#9ec25c', '#4a7a2b', '#b5cf6c'],
+      frente: ['#3a6f28', '#457f30', '#2f5f22', '#4f8b38', '#28521c'],
+      luz: { color: '255,160,80', a: 0.35 }, vineta: 0.3, tinte: 'rgba(255, 190, 140, 0.22)',
+      estrellas: false, luciernagas: false, mariposas: true, pajaros: true,
+    },
+    noche: {
+      cielo: [[0, '#070b22'], [0.4, '#101a44'], [0.8, '#1f2f63'], [1, '#3a4a7c']],
+      astro: { x: 0.78, y: 0.17, r: 0.055, nucleo: ['#fbf8ea', '#d8d6c2'], halo: '190,205,255', haloA: 0.55, rayos: false, luna: true },
+      nubes: { luz: '120,140,190', cuerpo: '70,85,130', sombra: '20,28,60', alpha: 0.55 },
+      montes: '#1d2a4a', lejos: ['#243c3a', '#1c2f2e'], bruma: '40,55,90',
+      medio: ['#22452e', '#182f20'], arbol: ['#2b5a38', '#153320', '#142a1a'],
+      suelo: ['#2c5a33', '#22482a', '#173420'], briznas: ['#2f6a38', '#3c7d45', '#26582f', '#428a4c', '#1f4a28', '#4d9556'],
+      frente: ['#173d1c', '#1d4a22', '#123216', '#215528', '#0f2a13'],
+      luz: { color: '170,190,255', a: 0.14 }, vineta: 0.4, tinte: 'rgba(70, 90, 160, 0.35)',
+      estrellas: true, luciernagas: true, mariposas: false, pajaros: false,
+    },
+  };
+  let M = MODOS.dia;
+
+  // ---------- escena ----------
+  const HORIZONTE = { lejos: 0.60, medio: 0.68, cerca: 0.76 };
+  const MARGEN = 40;
+
+  let W = 0, H = 0, DPR = 1;
+  let capas = null;
+  let temporizadorResize = 0;
+
+  function redimensionar() {
+    DPR = Math.min(window.devicePixelRatio || 1, 2);
+    W = window.innerWidth; H = window.innerHeight;
+    canvas.width = Math.floor(W * DPR);
+    canvas.height = Math.floor(H * DPR);
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    construirCapas();
+    for (const f of flores) f.cabeza = null;
+  }
+  window.addEventListener('resize', () => {
+    clearTimeout(temporizadorResize);
+    temporizadorResize = setTimeout(redimensionar, 120);
+  });
+
+  // ---------- tipos de flor ----------
+  const TIPOS = [
+    { nombre: 'margarita amarilla', peso: 5, forma: 'radial', n: 13, largo: 1.0, ancho: 0.26,
+      base: '#e59a1c', petalo: '#ffcf3f', punta: '#ffe680',
+      centro: '#a3561a', centroClaro: '#e0913c', semillas: '#5e2f0c', semillasN: 36, centroR: 0.34 },
+    { nombre: 'girasol', peso: 2, forma: 'radial', n: 21, largo: 1.05, ancho: 0.2, puntiagudo: true,
+      base: '#d4720f', petalo: '#f8a824', punta: '#ffd25a',
+      centro: '#3a1d0f', centroClaro: '#74421c', semillas: '#160a04', semillasN: 110, centroR: 0.46 },
+    { nombre: 'margarita blanca', peso: 3, forma: 'radial', n: 15, largo: 1.0, ancho: 0.2,
+      base: '#e3dcc4', petalo: '#fffcf3', punta: '#ffffff',
+      centro: '#d9931a', centroClaro: '#ffd24f', semillas: '#a86d0e', semillasN: 30, centroR: 0.3 },
+    { nombre: 'lavanda', peso: 2, forma: 'radial', n: 8, largo: 0.95, ancho: 0.34,
+      base: '#8064cc', petalo: '#b9a1e6', punta: '#e2d6f8',
+      centro: '#e2be3a', centroClaro: '#fff0a4', semillas: '#a98520', semillasN: 22, centroR: 0.3 },
+    { nombre: 'rosada', peso: 2, forma: 'radial', n: 10, largo: 1.0, ancho: 0.3, puntiagudo: true,
+      base: '#dc6a98', petalo: '#f8a9c9', punta: '#ffdcea',
+      centro: '#f0c852', centroClaro: '#fff5c4', semillas: '#bb922e', semillasN: 26, centroR: 0.3 },
+    { nombre: 'tulipán', peso: 3, forma: 'tulipan',
+      paletas: [
+        { base: '#b8301f', petalo: '#e8503c', punta: '#ff9a82' },
+        { base: '#d59a10', petalo: '#f7c531', punta: '#ffeb9a' },
+        { base: '#c94f86', petalo: '#ef8fb9', punta: '#ffd6e8' },
+        { base: '#e0621c', petalo: '#f78d3a', punta: '#ffc98a' },
+      ] },
+  ];
+  const bolsa = [];
+  TIPOS.forEach(t => { for (let i = 0; i < t.peso; i++) bolsa.push(t); });
+
+  // ---------- estado ----------
+  const flores = [];
+  const petalos = [];
+  const mariposas = [];
+  const pajaros = [];
+  const luciernagas = [];
+  const chispas = [];
+  let estrellas = [];
+  let primeraFlor = false;
+  const puntero = { x: 0, y: 0, ox: 0, oy: 0 };
+
+  function actualizarContador() {
+    const n = flores.length;
+    contadorEl.textContent = n === 1 ? '1 flor' : n + ' flores';
+  }
+  function escalaProfundidad(y) {
+    const u = clamp((y - H * 0.5) / (H * 0.5), 0, 1);
+    return 0.62 + u * 0.68;
+  }
+
+  function plantar(x, y, opciones = {}) {
+    const tipo = opciones.tipo || elegir(bolsa);
+    const altura = (opciones.altura || rand(80, 170)) * (W < 500 ? 0.8 : 1) * escalaProfundidad(y);
+    const esTulipan = tipo.forma === 'tulipan';
+    const paleta = esTulipan ? elegir(tipo.paletas) : tipo;
+    const n = tipo.n || 0;
+    const variaciones = [];
+    for (let i = 0; i < n; i++) {
+      variaciones.push({ l: rand(0.9, 1.08), a: rand(0.88, 1.12), rot: rand(-0.06, 0.06) });
+    }
+    flores.push({
+      x, y, tipo, paleta, variaciones,
+      altura,
+      radio: altura * (esTulipan ? rand(0.13, 0.17) : rand(0.18, 0.25)),
+      curva: rand(-0.22, 0.22),
+      fase: rand(0, Math.PI * 2),
+      giro: esTulipan ? rand(-0.18, 0.18) : rand(0, Math.PI * 2),
+      inclinacion: esTulipan ? 1 : rand(0.78, 1),
+      nacio: performance.now() + (opciones.retraso || 0),
+      hojas: [
+        { alt: rand(0.22, 0.34), lado: -1, largo: rand(0.26, 0.36), ang: rand(0.55, 0.85) },
+        { alt: rand(0.42, 0.58), lado: 1,  largo: rand(0.2, 0.3),  ang: rand(0.55, 0.85) },
+      ],
+      cabeza: null,
+    });
+    for (let i = 0; i < 10; i++) {
+      const a = rand(0, Math.PI * 2), v = rand(0.6, 2.2);
+      chispas.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 1.2, vida: 1, color: paleta.petalo, tam: rand(2, 4) });
+    }
+    if (!primeraFlor) { primeraFlor = true; pistaEl.classList.add('oculto'); }
+    actualizarContador();
+  }
+
+  // ---------- cabeza de flor (se dibuja una vez) ----------
+  function trazarPetalo(g, r0, largo, ancho, puntiagudo) {
+    g.beginPath();
+    g.moveTo(r0, 0);
+    if (puntiagudo) {
+      g.bezierCurveTo(largo * 0.35, -ancho, largo * 0.8, -ancho * 0.75, largo, 0);
+      g.bezierCurveTo(largo * 0.8, ancho * 0.75, largo * 0.35, ancho, r0, 0);
+    } else {
+      g.bezierCurveTo(largo * 0.3, -ancho * 1.05, largo * 0.95, -ancho * 0.9, largo, 0);
+      g.bezierCurveTo(largo * 0.95, ancho * 0.9, largo * 0.3, ancho * 1.05, r0, 0);
+    }
+    g.closePath();
+  }
+
+  function renderCabezaRadial(f, g) {
+    const tp = f.tipo, pal = f.paleta, r = f.radio;
+    g.scale(1, f.inclinacion);
+    const capasPetalos = [
+      { esc: 0.9, giro: Math.PI / tp.n, oscuro: true },
+      { esc: 1.0, giro: 0, oscuro: false },
+    ];
+    capasPetalos.forEach((capa, ci) => {
+      g.save();
+      if (ci === 0) {
+        g.shadowColor = 'rgba(30, 50, 15, 0.28)';
+        g.shadowBlur = r * 0.35;
+        g.shadowOffsetY = r * 0.1;
+      }
+      for (let i = 0; i < tp.n; i++) {
+        const v = f.variaciones[i];
+        const largo = r * tp.largo * v.l * capa.esc;
+        const ancho = r * tp.ancho * v.a * capa.esc;
+        g.save();
+        g.rotate((i / tp.n) * Math.PI * 2 + capa.giro + v.rot);
+        const grad = g.createLinearGradient(r * 0.15, 0, largo, 0);
+        if (capa.oscuro) {
+          grad.addColorStop(0, pal.base);
+          grad.addColorStop(0.6, pal.petalo);
+          grad.addColorStop(1, pal.petalo);
+        } else {
+          grad.addColorStop(0, pal.base);
+          grad.addColorStop(0.45, pal.petalo);
+          grad.addColorStop(1, pal.punta);
+        }
+        g.fillStyle = grad;
+        trazarPetalo(g, r * 0.15, largo, ancho, tp.puntiagudo);
+        g.fill();
+        if (!capa.oscuro) {
+          g.strokeStyle = 'rgba(0, 0, 0, 0.09)';
+          g.lineWidth = Math.max(0.6, r * 0.02);
+          g.beginPath();
+          g.moveTo(r * 0.3, 0);
+          g.lineTo(largo * 0.82, 0);
+          g.stroke();
+        }
+        g.restore();
+      }
+      g.restore();
+    });
+    const rc = r * tp.centroR;
+    g.save();
+    g.shadowColor = 'rgba(0, 0, 0, 0.25)';
+    g.shadowBlur = rc * 0.5;
+    g.shadowOffsetY = rc * 0.15;
+    const domo = g.createRadialGradient(-rc * 0.35, -rc * 0.35, rc * 0.1, 0, 0, rc);
+    domo.addColorStop(0, tp.centroClaro);
+    domo.addColorStop(0.7, tp.centro);
+    domo.addColorStop(1, tp.centro);
+    g.fillStyle = domo;
+    g.beginPath(); g.arc(0, 0, rc, 0, Math.PI * 2); g.fill();
+    g.restore();
+    g.fillStyle = tp.semillas;
+    const N = tp.semillasN;
+    for (let k = 0; k < N; k++) {
+      const a = k * ANGULO_DORADO;
+      const d = rc * 0.92 * Math.sqrt((k + 0.5) / N);
+      const s = rc * (0.05 + 0.05 * (k / N));
+      g.globalAlpha = 0.55 + 0.35 * (k / N);
+      g.beginPath(); g.arc(Math.cos(a) * d, Math.sin(a) * d, s, 0, Math.PI * 2); g.fill();
+    }
+    g.globalAlpha = 1;
+    g.fillStyle = 'rgba(255, 255, 255, 0.28)';
+    g.beginPath(); g.ellipse(-rc * 0.35, -rc * 0.4, rc * 0.3, rc * 0.18, -0.6, 0, Math.PI * 2); g.fill();
+  }
+
+  function renderCabezaTulipan(f, g) {
+    const pal = f.paleta, r = f.radio;
+    const arriba = -r * 1.2, abajo = r * 0.5, ancho = r * 0.78;
+    const gradiente = (oscuro) => {
+      const gr = g.createLinearGradient(0, abajo, 0, arriba);
+      gr.addColorStop(0, pal.base);
+      gr.addColorStop(oscuro ? 0.7 : 0.5, oscuro ? pal.base : pal.petalo);
+      gr.addColorStop(1, oscuro ? pal.petalo : pal.punta);
+      return gr;
+    };
+    g.save();
+    g.shadowColor = 'rgba(30, 50, 15, 0.3)';
+    g.shadowBlur = r * 0.35;
+    g.shadowOffsetY = r * 0.12;
+    g.fillStyle = gradiente(true);
+    g.beginPath();
+    g.moveTo(-ancho * 0.75, abajo * 0.6);
+    g.bezierCurveTo(-ancho * 0.9, arriba * 0.3, -ancho * 0.35, arriba * 1.05, 0, arriba);
+    g.bezierCurveTo(ancho * 0.35, arriba * 1.05, ancho * 0.9, arriba * 0.3, ancho * 0.75, abajo * 0.6);
+    g.bezierCurveTo(ancho * 0.6, abajo, -ancho * 0.6, abajo, -ancho * 0.75, abajo * 0.6);
+    g.closePath();
+    g.fill();
+    g.shadowColor = 'transparent';
+    for (const lado of [-1, 1]) {
+      g.save();
+      g.scale(lado, 1);
+      g.fillStyle = gradiente(false);
+      g.beginPath();
+      g.moveTo(0, abajo);
+      g.bezierCurveTo(-ancho * 0.9, abajo * 0.9, -ancho * 1.05, arriba * 0.25, -ancho * 0.72, arriba * 0.88);
+      g.bezierCurveTo(-ancho * 0.55, arriba * 0.55, -ancho * 0.2, arriba * 0.15, 0, arriba * 0.05);
+      g.closePath();
+      g.fill();
+      g.restore();
+    }
+    const frente = g.createLinearGradient(0, abajo, 0, arriba * 0.7);
+    frente.addColorStop(0, pal.base);
+    frente.addColorStop(0.55, pal.petalo);
+    frente.addColorStop(1, pal.punta);
+    g.fillStyle = frente;
+    g.beginPath();
+    g.moveTo(-ancho * 0.55, abajo * 0.7);
+    g.bezierCurveTo(-ancho * 0.7, arriba * 0.2, -ancho * 0.3, arriba * 0.72, 0, arriba * 0.66);
+    g.bezierCurveTo(ancho * 0.3, arriba * 0.72, ancho * 0.7, arriba * 0.2, ancho * 0.55, abajo * 0.7);
+    g.bezierCurveTo(ancho * 0.3, abajo * 1.05, -ancho * 0.3, abajo * 1.05, -ancho * 0.55, abajo * 0.7);
+    g.closePath();
+    g.fill();
+    g.fillStyle = 'rgba(255, 255, 255, 0.22)';
+    g.beginPath();
+    g.ellipse(-ancho * 0.25, arriba * 0.2, ancho * 0.14, r * 0.45, 0.15, 0, Math.PI * 2);
+    g.fill();
+    g.restore();
+  }
+
+  function crearCabeza(f) {
+    const r = f.radio;
+    const pad = r * 1.45;
+    const S = Math.ceil(pad * 2);
+    const esc = Math.min(3, DPR * 1.5);
+    const c = document.createElement('canvas');
+    c.width = c.height = Math.ceil(S * esc);
+    const g = c.getContext('2d');
+    g.scale(esc, esc);
+    g.translate(pad, pad);
+    if (f.tipo.forma === 'tulipan') renderCabezaTulipan(f, g);
+    else renderCabezaRadial(f, g);
+    f.cabeza = c;
+    f.cabezaPad = pad;
+    f.cabezaS = S;
+  }
+
+  // ---------- tallo y hojas ----------
+  function puntoTallo(f, h, u) {
+    const cx = f.curva * h, cy = -h * 0.5;
+    const x = 2 * (1 - u) * u * cx;
+    const y = 2 * (1 - u) * u * cy + u * u * (-h);
+    return [x, y];
+  }
+  function dibujarTallo(f, h) {
+    const lwBase = Math.max(2.5, f.altura * 0.045) * (f.tipo.forma === 'tulipan' ? 1.25 : 1);
+    const lwTop = lwBase * 0.5;
+    const pasos = 14;
+    const izq = [], der = [];
+    for (let i = 0; i <= pasos; i++) {
+      const u = i / pasos;
+      const [x, y] = puntoTallo(f, h, u);
+      const [x2, y2] = puntoTallo(f, h, Math.min(1, u + 0.01));
+      let nx = -(y2 - y), ny = (x2 - x);
+      const L = Math.hypot(nx, ny) || 1; nx /= L; ny /= L;
+      const w = (lwBase + (lwTop - lwBase) * u) / 2;
+      izq.push([x + nx * w, y + ny * w]);
+      der.push([x - nx * w, y - ny * w]);
+    }
+    ctx.beginPath();
+    ctx.moveTo(izq[0][0], izq[0][1]);
+    for (let i = 1; i < izq.length; i++) ctx.lineTo(izq[i][0], izq[i][1]);
+    for (let i = der.length - 1; i >= 0; i--) ctx.lineTo(der[i][0], der[i][1]);
+    ctx.closePath();
+    const grad = ctx.createLinearGradient(-lwBase, 0, lwBase, 0);
+    grad.addColorStop(0, '#3c7f2c');
+    grad.addColorStop(0.5, '#5aa542');
+    grad.addColorStop(1, '#7cc35c');
+    ctx.fillStyle = grad;
+    ctx.fill();
+  }
+  function dibujarHoja(f, h, hoja, crecimiento) {
+    if (crecimiento < 0.35) return;
+    const esc = Math.min(1, (crecimiento - 0.35) / 0.5);
+    const [px, py] = puntoTallo(f, h, hoja.alt);
+    const largo = f.altura * hoja.largo * esc;
+    const ancho = largo * 0.3;
+    ctx.save();
+    ctx.translate(px, py);
+    ctx.rotate(hoja.lado > 0 ? -hoja.ang : Math.PI + hoja.ang);
+    const grad = ctx.createLinearGradient(0, 0, largo, 0);
+    grad.addColorStop(0, '#3f8a2f');
+    grad.addColorStop(0.6, '#5fae45');
+    grad.addColorStop(1, '#8fcc6a');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.bezierCurveTo(largo * 0.25, -ancho, largo * 0.75, -ancho * 0.7, largo, 0);
+    ctx.bezierCurveTo(largo * 0.75, ancho * 0.7, largo * 0.25, ancho, 0, 0);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(30, 70, 20, 0.35)';
+    ctx.lineWidth = Math.max(0.7, largo * 0.02);
+    ctx.beginPath();
+    ctx.moveTo(largo * 0.05, 0);
+    ctx.quadraticCurveTo(largo * 0.5, -ancho * 0.1, largo * 0.9, 0);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function dibujarFlor(f, t) {
+    const edad = (t - f.nacio) / 1000;
+    if (edad < 0) return;
+    const crecimiento = easeOutCubic(Math.min(1, edad / 0.75));
+    const florecer = edad < 0.4 ? 0 : easeOutBack(Math.min(1, (edad - 0.4) / 0.65));
+    const viento = reducirMovimiento ? 0
+      : Math.sin(t * 0.0012 + f.fase + f.x * 0.004) * 0.05 + Math.sin(t * 0.0031 + f.fase) * 0.015;
+    const h = f.altura * crecimiento;
+    ctx.save();
+    ctx.translate(f.x, f.y);
+    ctx.fillStyle = 'rgba(20, 60, 10, 0.16)';
+    ctx.beginPath();
+    ctx.ellipse(f.radio * 0.2, 2, f.radio * 0.9 * crecimiento, f.radio * 0.22 * crecimiento, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.rotate(viento);
+    dibujarTallo(f, h);
+    for (const hoja of f.hojas) dibujarHoja(f, h, hoja, crecimiento);
+    if (florecer > 0) {
+      if (!f.cabeza) crearCabeza(f);
+      const [tx, ty] = puntoTallo(f, h, 1);
+      const esTulipan = f.tipo.forma === 'tulipan';
+      ctx.translate(tx, ty + (esTulipan ? -f.radio * 0.45 : 0));
+      const giroApertura = (1 - Math.min(1, florecer)) * (esTulipan ? 0 : 0.6);
+      ctx.rotate(f.giro + giroApertura);
+      ctx.scale(florecer, florecer);
+      ctx.drawImage(f.cabeza, -f.cabezaPad, -f.cabezaPad, f.cabezaS, f.cabezaS);
+    }
+    ctx.restore();
+  }
+
+  // ---------- paisaje en capas ----------
+  function crearCanvas(w, h) {
+    const c = document.createElement('canvas');
+    c.width = Math.ceil(w * DPR);
+    c.height = Math.ceil(h * DPR);
+    const g = c.getContext('2d');
+    g.scale(DPR, DPR);
+    return { c, g };
+  }
+  function perfilColina(x, base, amp, semilla) {
+    return base
+      - Math.sin(x * 0.0035 + semilla) * amp
+      - Math.sin(x * 0.0091 + semilla * 2.1) * amp * 0.45
+      - Math.sin(x * 0.021 + semilla * 3.7) * amp * 0.12;
+  }
+  function trazarColina(g, ancho, alto, base, amp, semilla) {
+    g.beginPath();
+    g.moveTo(0, alto);
+    for (let x = 0; x <= ancho; x += 6) g.lineTo(x, perfilColina(x, base, amp, semilla));
+    g.lineTo(ancho, alto);
+    g.closePath();
+  }
+
+  function construirNubes() {
+    const ancho = W * 1.6, alto = H * 0.55;
+    const { c, g } = crearCanvas(ancho, alto);
+    const cantidad = Math.max(4, Math.round(W / 260));
+    for (let i = 0; i < cantidad; i++) {
+      const cx = rand(0, ancho), cy = rand(alto * 0.15, alto * 0.75);
+      const esc = rand(0.6, 1.3) * Math.min(1, W / 900);
+      const bultos = 5 + Math.floor(rand(0, 4));
+      const partes = [];
+      for (let b = 0; b < bultos; b++) {
+        partes.push({ dx: rand(-70, 70) * esc, dy: rand(-14, 10) * esc, r: rand(22, 46) * esc });
+      }
+      g.save();
+      g.filter = 'blur(6px)';
+      g.fillStyle = 'rgba(' + M.nubes.sombra + ', 0.55)';
+      for (const p of partes) { g.beginPath(); g.arc(cx + p.dx, cy + p.dy + p.r * 0.35, p.r, 0, Math.PI * 2); g.fill(); }
+      g.restore();
+      g.save();
+      g.filter = 'blur(3px)';
+      for (const p of partes) {
+        const grad = g.createRadialGradient(cx + p.dx - p.r * 0.3, cy + p.dy - p.r * 0.4, p.r * 0.1, cx + p.dx, cy + p.dy, p.r);
+        grad.addColorStop(0, 'rgba(' + M.nubes.luz + ', 0.98)');
+        grad.addColorStop(0.7, 'rgba(' + M.nubes.cuerpo + ', 0.9)');
+        grad.addColorStop(1, 'rgba(' + M.nubes.cuerpo + ', 0)');
+        g.fillStyle = grad;
+        g.beginPath(); g.arc(cx + p.dx, cy + p.dy, p.r, 0, Math.PI * 2); g.fill();
+      }
+      g.restore();
+    }
+    return c;
+  }
+
+  function construirColinaLejos() {
+    const ancho = W + MARGEN * 2;
+    const { c, g } = crearCanvas(ancho, H);
+    const base = H * HORIZONTE.lejos;
+    trazarColina(g, ancho, H, base - H * 0.05, H * 0.07, 1.3);
+    g.fillStyle = M.montes;
+    g.fill();
+    trazarColina(g, ancho, H, base, H * 0.045, 4.2);
+    const grad = g.createLinearGradient(0, base - H * 0.08, 0, H);
+    grad.addColorStop(0, M.lejos[0]);
+    grad.addColorStop(1, M.lejos[1]);
+    g.fillStyle = grad;
+    g.fill();
+    const bruma = g.createLinearGradient(0, base - H * 0.02, 0, base + H * 0.12);
+    bruma.addColorStop(0, 'rgba(' + M.bruma + ', 0)');
+    bruma.addColorStop(1, 'rgba(' + M.bruma + ', 0.55)');
+    g.fillStyle = bruma;
+    g.fillRect(0, base - H * 0.02, ancho, H * 0.14);
+    return c;
+  }
+
+  function construirColinaMedio() {
+    const ancho = W + MARGEN * 2;
+    const { c, g } = crearCanvas(ancho, H);
+    const base = H * HORIZONTE.medio;
+    trazarColina(g, ancho, H, base, H * 0.04, 9.1);
+    const grad = g.createLinearGradient(0, base - H * 0.05, 0, H);
+    grad.addColorStop(0, M.medio[0]);
+    grad.addColorStop(1, M.medio[1]);
+    g.fillStyle = grad;
+    g.fill();
+    const cantidad = Math.round(ancho / 90);
+    for (let i = 0; i < cantidad; i++) {
+      const x = rand(0, ancho);
+      const y = perfilColina(x, base, H * 0.04, 9.1) + rand(2, 12);
+      const s = rand(7, 15) * Math.min(1, W / 800);
+      g.fillStyle = M.arbol[2];
+      g.fillRect(x - s * 0.08, y - s * 0.6, s * 0.16, s * 0.7);
+      const copa = g.createRadialGradient(x - s * 0.3, y - s * 1.2, s * 0.1, x, y - s, s * 0.95);
+      copa.addColorStop(0, M.arbol[0]);
+      copa.addColorStop(1, M.arbol[1]);
+      g.fillStyle = copa;
+      g.beginPath();
+      g.arc(x, y - s * 1.0, s * 0.75, 0, Math.PI * 2);
+      g.arc(x - s * 0.5, y - s * 0.7, s * 0.55, 0, Math.PI * 2);
+      g.arc(x + s * 0.5, y - s * 0.75, s * 0.55, 0, Math.PI * 2);
+      g.fill();
+    }
+    return c;
+  }
+
+  function construirSuelo() {
+    const ancho = W + MARGEN * 2;
+    const { c, g } = crearCanvas(ancho, H);
+    const base = H * HORIZONTE.cerca;
+    trazarColina(g, ancho, H, base, H * 0.035, 14.7);
+    const grad = g.createLinearGradient(0, base - H * 0.04, 0, H);
+    grad.addColorStop(0, M.suelo[0]);
+    grad.addColorStop(0.5, M.suelo[1]);
+    grad.addColorStop(1, M.suelo[2]);
+    g.fillStyle = grad;
+    g.fill();
+    const cantidad = Math.round((ancho * (H - base)) / 260);
+    g.lineCap = 'round';
+    for (let i = 0; i < cantidad; i++) {
+      const x = rand(0, ancho);
+      const techo = perfilColina(x, base, H * 0.035, 14.7);
+      const y0 = rand(techo, H + 4);
+      const u = clamp((y0 - techo) / (H - techo), 0, 1);
+      const largo = 4 + u * u * 26;
+      const inclinacion = rand(-0.5, 0.5) * largo;
+      g.strokeStyle = elegir(M.briznas);
+      g.globalAlpha = 0.5 + u * 0.45;
+      g.lineWidth = 0.8 + u * 1.4;
+      g.beginPath();
+      g.moveTo(x, y0);
+      g.quadraticCurveTo(x + inclinacion * 0.3, y0 - largo * 0.6, x + inclinacion, y0 - largo);
+      g.stroke();
+    }
+    g.globalAlpha = 1;
+    return c;
+  }
+
+  function construirPastoFrente() {
+    const alto = Math.min(150, H * 0.18);
+    const ancho = W + MARGEN * 2;
+    const { c, g } = crearCanvas(ancho, alto);
+    const cantidad = Math.round(ancho / 3);
+    g.lineCap = 'round';
+    for (let i = 0; i < cantidad; i++) {
+      const x = rand(0, ancho);
+      const largo = rand(alto * 0.25, alto * 0.95);
+      const inclinacion = rand(-0.45, 0.45) * largo;
+      g.strokeStyle = elegir(M.frente);
+      g.globalAlpha = rand(0.75, 1);
+      g.lineWidth = rand(1.6, 3.6);
+      g.beginPath();
+      g.moveTo(x, alto + 4);
+      g.quadraticCurveTo(x + inclinacion * 0.25, alto - largo * 0.55, x + inclinacion, alto - largo);
+      g.stroke();
+    }
+    return { c, alto };
+  }
+
+  function construirCapas() {
+    const frente = construirPastoFrente();
+    capas = {
+      nubes: construirNubes(),
+      lejos: construirColinaLejos(),
+      medio: construirColinaMedio(),
+      suelo: construirSuelo(),
+      frente: frente.c,
+      frenteAlto: frente.alto,
+    };
+    estrellas = [];
+    if (M.estrellas) {
+      for (let i = 0; i < 170; i++) {
+        estrellas.push({ x: rand(0, W), y: rand(0, H * 0.6), r: rand(0.4, 1.7), f: rand(0, 6), v: rand(0.6, 2) });
+      }
+    }
+    luciernagas.length = 0;
+    if (M.luciernagas && !reducirMovimiento) {
+      for (let i = 0; i < 26; i++) {
+        luciernagas.push({ x: rand(0, W), y: rand(H * 0.5, H * 0.95), ox: rand(0, 100), oy: rand(0, 100), f: rand(0, 6), v: rand(0.8, 1.6) });
+      }
+    }
+  }
+
+  function aplicarModo(nombre) {
+    M = MODOS[nombre] || MODOS.dia;
+    document.body.dataset.modo = nombre in MODOS ? nombre : 'dia';
+    if (W > 0) construirCapas();
+  }
+
+  // ---------- dibujo del fondo ----------
+  function dibujarCielo(t) {
+    const cielo = ctx.createLinearGradient(0, 0, 0, H * HORIZONTE.lejos);
+    for (const [pos, color] of M.cielo) cielo.addColorStop(pos, color);
+    ctx.fillStyle = cielo;
+    ctx.fillRect(0, 0, W, H);
+
+    if (M.estrellas) {
+      ctx.fillStyle = '#ffffff';
+      for (const e of estrellas) {
+        ctx.globalAlpha = reducirMovimiento ? 0.8 : 0.45 + 0.55 * Math.abs(Math.sin(t * 0.0015 * e.v + e.f));
+        ctx.beginPath(); ctx.arc(e.x + puntero.x * 4, e.y + puntero.y * 2, e.r, 0, Math.PI * 2); ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+    }
+
+    const A = M.astro;
+    const sx = W * A.x + puntero.x * 6, sy = H * A.y + puntero.y * 4, sr = Math.min(W, H) * A.r;
+    const halo = ctx.createRadialGradient(sx, sy, sr * 0.5, sx, sy, sr * 4);
+    halo.addColorStop(0, 'rgba(' + A.halo + ', ' + A.haloA + ')');
+    halo.addColorStop(0.35, 'rgba(' + A.halo + ', ' + (A.haloA * 0.45) + ')');
+    halo.addColorStop(1, 'rgba(' + A.halo + ', 0)');
+    ctx.fillStyle = halo;
+    ctx.fillRect(sx - sr * 4, sy - sr * 4, sr * 8, sr * 8);
+
+    if (A.rayos && !reducirMovimiento) {
+      ctx.save();
+      ctx.translate(sx, sy);
+      ctx.rotate(t * 0.00004);
+      const largoRayo = Math.max(W, H) * 0.9;
+      const rayos = ctx.createRadialGradient(0, 0, sr, 0, 0, largoRayo);
+      rayos.addColorStop(0, 'rgba(' + A.rayosColor + ', ' + A.rayosA + ')');
+      rayos.addColorStop(1, 'rgba(' + A.rayosColor + ', 0)');
+      ctx.fillStyle = rayos;
+      for (let i = 0; i < 12; i++) {
+        const a = (i / 12) * Math.PI * 2;
+        const apertura = 0.05 + 0.03 * Math.sin(i * 1.7);
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(Math.cos(a - apertura) * largoRayo, Math.sin(a - apertura) * largoRayo);
+        ctx.lineTo(Math.cos(a + apertura) * largoRayo, Math.sin(a + apertura) * largoRayo);
+        ctx.closePath();
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+
+    const nucleo = ctx.createRadialGradient(sx - sr * 0.2, sy - sr * 0.2, sr * 0.1, sx, sy, sr);
+    nucleo.addColorStop(0, A.nucleo[0]);
+    nucleo.addColorStop(1, A.nucleo[1]);
+    ctx.fillStyle = nucleo;
+    ctx.beginPath(); ctx.arc(sx, sy, sr, 0, Math.PI * 2); ctx.fill();
+    if (A.luna) {
+      ctx.fillStyle = 'rgba(90, 95, 120, 0.16)';
+      ctx.beginPath(); ctx.arc(sx - sr * 0.3, sy - sr * 0.15, sr * 0.22, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(sx + sr * 0.25, sy + sr * 0.3, sr * 0.16, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(sx + sr * 0.35, sy - sr * 0.4, sr * 0.11, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+
+  function dibujarNubes(t) {
+    const anchoNubes = W * 1.6;
+    const deriva = reducirMovimiento ? 0 : (t * 0.006) % anchoNubes;
+    const px = puntero.x * 14, py = puntero.y * 6;
+    ctx.globalAlpha = M.nubes.alpha;
+    ctx.drawImage(capas.nubes, -deriva + px, py, anchoNubes, H * 0.55);
+    ctx.drawImage(capas.nubes, -deriva + anchoNubes + px, py, anchoNubes, H * 0.55);
+    ctx.globalAlpha = 1;
+  }
+
+  function dibujarPajaros(t) {
+    for (const p of pajaros) {
+      p.x += p.vx;
+      p.y += Math.sin(t * 0.001 + p.fase) * 0.15;
+      if (p.x > W + 40) { p.x = -40; p.y = rand(H * 0.08, H * 0.4); }
+      const aleteo = Math.sin(t * 0.012 + p.fase) * 0.5;
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.strokeStyle = 'rgba(60, 70, 80, 0.55)';
+      ctx.lineWidth = 1.2;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(-p.tam, aleteo * p.tam * 0.6);
+      ctx.quadraticCurveTo(-p.tam * 0.5, -p.tam * 0.4 + aleteo * p.tam * 0.3, 0, 0);
+      ctx.quadraticCurveTo(p.tam * 0.5, -p.tam * 0.4 + aleteo * p.tam * 0.3, p.tam, aleteo * p.tam * 0.6);
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
+
+  function dibujarCapa(imagen, factorX, factorY) {
+    ctx.drawImage(imagen, -MARGEN + puntero.x * factorX, puntero.y * factorY, W + MARGEN * 2, H);
+  }
+
+  function dibujarPastoFrente(t) {
+    const alto = capas.frenteAlto;
+    const ondulacion = reducirMovimiento ? 0 : Math.sin(t * 0.0011) * 0.035 + Math.sin(t * 0.0027) * 0.012;
+    ctx.save();
+    ctx.translate(0, H);
+    ctx.transform(1, 0, ondulacion, 1, 0, 0);
+    ctx.drawImage(capas.frente, -MARGEN - puntero.x * 8, -alto, W + MARGEN * 2, alto);
+    ctx.restore();
+  }
+
+  function dibujarLuciernagas(t) {
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    for (const l of luciernagas) {
+      l.ox += 0.003 * l.v; l.oy += 0.0025 * l.v;
+      l.x += (Math.sin(l.ox) * 1.2 + Math.sin(l.ox * 2.7) * 0.4) * l.v * 0.5;
+      l.y += (Math.cos(l.oy) * 0.8 + Math.sin(l.oy * 1.9) * 0.3) * l.v * 0.5;
+      if (l.x < -20) l.x = W + 20;
+      if (l.x > W + 20) l.x = -20;
+      l.y = clamp(l.y, H * 0.4, H * 0.97);
+      const brillo = 0.25 + 0.75 * Math.pow(Math.abs(Math.sin(t * 0.0018 * l.v + l.f)), 3);
+      const glow = ctx.createRadialGradient(l.x, l.y, 0, l.x, l.y, 9);
+      glow.addColorStop(0, 'rgba(225, 255, 140, ' + (0.9 * brillo) + ')');
+      glow.addColorStop(0.4, 'rgba(200, 245, 110, ' + (0.35 * brillo) + ')');
+      glow.addColorStop(1, 'rgba(200, 245, 110, 0)');
+      ctx.fillStyle = glow;
+      ctx.beginPath(); ctx.arc(l.x, l.y, 9, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  function dibujarLuzYVineta() {
+    const sx = W * M.astro.x, sy = H * M.astro.y;
+    const luz = ctx.createRadialGradient(sx, sy, 0, sx, sy, Math.max(W, H) * 0.75);
+    luz.addColorStop(0, 'rgba(' + M.luz.color + ', ' + M.luz.a + ')');
+    luz.addColorStop(0.5, 'rgba(' + M.luz.color + ', ' + (M.luz.a * 0.3) + ')');
+    luz.addColorStop(1, 'rgba(' + M.luz.color + ', 0)');
+    ctx.fillStyle = luz;
+    ctx.fillRect(0, 0, W, H);
+    const v = ctx.createRadialGradient(W * 0.5, H * 0.55, Math.min(W, H) * 0.45, W * 0.5, H * 0.55, Math.max(W, H) * 0.85);
+    v.addColorStop(0, 'rgba(15, 25, 15, 0)');
+    v.addColorStop(1, 'rgba(15, 25, 15, ' + M.vineta + ')');
+    ctx.fillStyle = v;
+    ctx.fillRect(0, 0, W, H);
+  }
+
+  // ---------- pétalos, mariposas, chispas ----------
+  const COLORES_PETALO = ['#ffcf3f', '#f8a9c9', '#fffdf6', '#b9a1e6', '#f9a825', '#e8503c'];
+  function nuevoPetalo(arriba) {
+    petalos.push({
+      x: rand(-20, W + 20),
+      y: arriba ? rand(-40, -10) : rand(0, H),
+      vx: rand(-0.3, 0.3), vy: rand(0.4, 1.1),
+      rot: rand(0, Math.PI * 2), vrot: rand(-0.03, 0.03),
+      tam: rand(4, 8), fase: rand(0, Math.PI * 2),
+      color: elegir(COLORES_PETALO),
+    });
+  }
+  function dibujarPetalos(t) {
+    for (let i = petalos.length - 1; i >= 0; i--) {
+      const p = petalos[i];
+      p.x += p.vx + Math.sin(t * 0.001 + p.fase) * 0.6;
+      p.y += p.vy;
+      p.rot += p.vrot;
+      if (p.y > H + 20) { petalos.splice(i, 1); continue; }
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rot);
+      ctx.globalAlpha = 0.85;
+      ctx.fillStyle = p.color;
+      ctx.beginPath();
+      ctx.moveTo(-p.tam, 0);
+      ctx.bezierCurveTo(-p.tam * 0.6, -p.tam * 0.7, p.tam * 0.6, -p.tam * 0.7, p.tam, 0);
+      ctx.bezierCurveTo(p.tam * 0.6, p.tam * 0.5, -p.tam * 0.6, p.tam * 0.5, -p.tam, 0);
+      ctx.fill();
+      ctx.restore();
+    }
+  }
+  function nuevaMariposa() {
+    mariposas.push({
+      x: rand(0, W), y: rand(H * 0.2, H * 0.7),
+      ox: rand(0, 100), oy: rand(0, 100),
+      vel: rand(0.6, 1.1), tam: rand(9, 14),
+      color: elegir(['#ffb703', '#ff8fab', '#8ecae6', '#f4d35e']),
+      fase: rand(0, Math.PI * 2),
+    });
+  }
+  function dibujarMariposas(t) {
+    for (const m of mariposas) {
+      m.ox += 0.004 * m.vel; m.oy += 0.003 * m.vel;
+      const dx = Math.sin(m.ox) * 1.6 + Math.sin(m.ox * 2.3) * 0.5;
+      const dy = Math.cos(m.oy) * 1.0 + Math.sin(m.oy * 1.7) * 0.4;
+      m.x += dx * m.vel; m.y += dy * m.vel;
+      if (m.x < -30) m.x = W + 30;
+      if (m.x > W + 30) m.x = -30;
+      m.y = Math.max(H * 0.12, Math.min(H * 0.8, m.y));
+      const aleteo = Math.abs(Math.sin(t * 0.02 + m.fase));
+      const dir = dx >= 0 ? 1 : -1;
+      ctx.save();
+      ctx.translate(m.x, m.y);
+      ctx.scale(dir, 1);
+      ctx.rotate(dy * 0.15);
+      ctx.fillStyle = m.color;
+      ctx.globalAlpha = 0.92;
+      for (const lado of [-1, 1]) {
+        ctx.save();
+        ctx.scale(lado * (0.35 + aleteo * 0.65), 1);
+        ctx.beginPath(); ctx.ellipse(m.tam * 0.6, -m.tam * 0.25, m.tam * 0.6, m.tam * 0.45, 0.3, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(m.tam * 0.5, m.tam * 0.3, m.tam * 0.45, m.tam * 0.33, -0.3, 0, Math.PI * 2); ctx.fill();
+        ctx.restore();
+      }
+      ctx.fillStyle = '#3d2b1f';
+      ctx.beginPath(); ctx.ellipse(0, 0, m.tam * 0.12, m.tam * 0.5, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+    }
+  }
+  function dibujarChispas() {
+    for (let i = chispas.length - 1; i >= 0; i--) {
+      const c = chispas[i];
+      c.x += c.vx; c.y += c.vy; c.vy += 0.05; c.vida -= 0.025;
+      if (c.vida <= 0) { chispas.splice(i, 1); continue; }
+      ctx.globalAlpha = c.vida;
+      ctx.fillStyle = c.color;
+      ctx.beginPath(); ctx.arc(c.x, c.y, c.tam * c.vida, 0, Math.PI * 2); ctx.fill();
+      ctx.globalAlpha = 1;
+    }
+  }
+
+  function lanzarEfectoCielo(x, y) {
+    const cieloNoche = M.estrellas;
+    const cantidadPetalos = cieloNoche ? 24 : 14;
+    const cantidadEstrellas = cieloNoche ? 18 : 0;
+    const cantidadMariposas = cieloNoche ? 0 : 5;
+
+    for (let i = 0; i < cantidadPetalos; i++) {
+      const ang = rand(-Math.PI, Math.PI);
+      const vel = rand(0.6, 2.1);
+      petalos.push({
+        x: x + rand(-18, 18),
+        y: y + rand(-18, 18),
+        vx: Math.cos(ang) * vel * 0.7 + rand(-0.3, 0.3),
+        vy: Math.sin(ang) * vel * 0.7 + rand(0.2, 1.0),
+        rot: rand(0, Math.PI * 2),
+        vrot: rand(-0.06, 0.06),
+        tam: rand(4, 8),
+        fase: rand(0, Math.PI * 2),
+        color: elegir(COLORES_PETALO),
+      });
+    }
+
+    for (let i = 0; i < cantidadEstrellas; i++) {
+      const brillo = rand(2, 5);
+      chispas.push({
+        x: x + rand(-30, 30),
+        y: y + rand(-24, 24),
+        vx: rand(-0.8, 0.8),
+        vy: rand(-0.9, 0.4),
+        vida: rand(0.8, 1.4),
+        color: i % 2 === 0 ? '#fff7d6' : '#dfeaff',
+        tam: brillo,
+      });
+    }
+
+    for (let i = 0; i < cantidadMariposas; i++) {
+      mariposas.push({
+        x: x + rand(-18, 18),
+        y: y + rand(-15, 15),
+        ox: rand(0, 100),
+        oy: rand(0, 100),
+        vel: rand(0.8, 1.4),
+        tam: rand(8, 13),
+        color: elegir(['#ffb703', '#ff8fab', '#8ecae6', '#f4d35e']),
+        fase: rand(0, Math.PI * 2),
+      });
+    }
+  }
+
+  // ---------- aplicar la configuración a la página ----------
+  function aplicarTextos(cfg) {
+    let titulo = (cfg.titulo || CONFIG_DEFECTO.titulo).trim();
+    try {
+      const para = new URLSearchParams(location.search).get('para');
+      if (para && para.trim()) titulo += ', ' + para.trim().slice(0, 30);
+    } catch (e) {}
+    saludoEl.textContent = titulo;
+    pistaEl.textContent = (cfg.mensaje || '').trim() || CONFIG_DEFECTO.mensaje;
+  }
+  function aplicarConfig(cfg) {
+    aplicarTextos(cfg);
+    aplicarModo(cfg.modo);
+  }
+
+  // ---------- música ----------
+  const botonMusica = $('musica');
+  let audio = null;
+  let usuarioPauso = false;
+  function dataUrlABlob(dataUrl) {
+    const [cab, datos] = dataUrl.split(',');
+    const tipo = (cab.match(/data:([^;]+)/) || [])[1] || 'audio/mpeg';
+    const bin = atob(datos);
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return new Blob([bytes], { type: tipo });
+  }
+  function prepararMusica() {
+    if (!CONFIG.musica || !CONFIG.musica.dataUrl) return;
+    audio = new Audio();
+    audio.loop = true;
+    audio.volume = 0.65;
+    audio.addEventListener('error', () => {
+      try { audio.src = URL.createObjectURL(dataUrlABlob(CONFIG.musica.dataUrl)); } catch (e) {}
+    }, { once: true });
+    audio.addEventListener('play', () => { botonMusica.textContent = '♪ Pausar'; });
+    audio.addEventListener('pause', () => { botonMusica.textContent = '♪ Música'; });
+    audio.src = CONFIG.musica.dataUrl;
+    botonMusica.hidden = false;
+  }
+  function intentarReproducir() {
+    if (!audio || !audio.paused || usuarioPauso) return;
+    audio.play().catch(() => {});
+  }
+  botonMusica.addEventListener('click', () => {
+    if (!audio) return;
+    if (audio.paused) { usuarioPauso = false; audio.play().catch(() => {}); }
+    else { usuarioPauso = true; audio.pause(); }
+  });
+
+  // ---------- arranque ----------
+  aplicarConfig(CONFIG);
+  redimensionar();
+  prepararMusica();
+  if (!reducirMovimiento) {
+    for (let i = 0; i < 28; i++) nuevoPetalo(false);
+    for (let i = 0; i < 4; i++) nuevaMariposa();
+    for (let i = 0; i < 5; i++) {
+      pajaros.push({ x: rand(0, W), y: rand(H * 0.08, H * 0.4), vx: rand(0.25, 0.5), tam: rand(4, 7), fase: rand(0, 6) });
+    }
+  }
+
+  function cuadro(t) {
+    puntero.x += (puntero.ox - puntero.x) * 0.04;
+    puntero.y += (puntero.oy - puntero.y) * 0.04;
+
+    dibujarCielo(t);
+    dibujarNubes(t);
+    if (M.pajaros) dibujarPajaros(t);
+    dibujarCapa(capas.lejos, 10, 3);
+    dibujarCapa(capas.medio, 6, 2);
+    dibujarCapa(capas.suelo, 2, 1);
+
+    if (!reducirMovimiento && petalos.length < 40 && Math.random() < 0.08) nuevoPetalo(true);
+    flores.sort((a, b) => a.y - b.y);
+    for (const f of flores) dibujarFlor(f, t);
+
+    dibujarPastoFrente(t);
+    dibujarChispas();
+    dibujarPetalos(t);
+    if (M.mariposas) dibujarMariposas(t);
+
+    if (M.tinte) {
+      ctx.save();
+      ctx.globalCompositeOperation = 'multiply';
+      ctx.fillStyle = M.tinte;
+      ctx.fillRect(0, 0, W, H);
+      ctx.restore();
+    }
+    if (M.luciernagas) dibujarLuciernagas(t);
+    dibujarLuzYVineta();
+    requestAnimationFrame(cuadro);
+  }
+  requestAnimationFrame(cuadro);
+
+  // ---------- interacción con el jardín ----------
+  let arrastrando = false, ultimaX = 0, ultimaY = 0;
+  function procesarToque(x, y) {
+    const umbral = H * 0.62;
+    if (y < umbral) {
+      lanzarEfectoCielo(x, y);
+      return;
+    }
+
+    const sueloY = Math.min(H * 0.96, Math.max(H * 0.7, y));
+    plantar(x, sueloY, { altura: rand(60, 120) });
+  }
+
+  canvas.addEventListener('pointerdown', e => {
+    arrastrando = true;
+    ultimaX = e.clientX; ultimaY = e.clientY;
+    procesarToque(e.clientX, e.clientY);
+    intentarReproducir();
+  });
+  canvas.addEventListener('pointermove', e => {
+    if (!reducirMovimiento) {
+      puntero.ox = (e.clientX / W - 0.5) * 2;
+      puntero.oy = (e.clientY / H - 0.5) * 2;
+    }
+    if (!arrastrando) return;
+    const d = Math.hypot(e.clientX - ultimaX, e.clientY - ultimaY);
+    if (d > 42) {
+      ultimaX = e.clientX; ultimaY = e.clientY;
+      procesarToque(e.clientX + rand(-6, 6), e.clientY + rand(-6, 6));
+    }
+  });
+  const soltar = () => { arrastrando = false; };
+  canvas.addEventListener('pointerup', soltar);
+  canvas.addEventListener('pointercancel', soltar);
+  canvas.addEventListener('pointerleave', soltar);
+
+  $('sembrar').addEventListener('click', () => {
+    const cantidad = W < 500 ? 22 : 40;
+    for (let i = 0; i < cantidad; i++) {
+      plantar(rand(10, W - 10), rand(H * 0.68, H * 0.97), { retraso: i * 45 });
+    }
+    intentarReproducir();
+  });
+  $('limpiar').addEventListener('click', () => {
+    flores.length = 0;
+    chispas.length = 0;
+    actualizarContador();
+  });
+
+  // =====================================================================
+  //  Editor: solo para quien puede editar el artifact. Guarda publicando
+  //  una nueva versión de la página con la configuración adentro.
+  // =====================================================================
+  const editor = $('editor');
+  const botonPersonalizar = $('personalizar');
+  const campoTitulo = $('campo-titulo');
+  const campoMensaje = $('campo-mensaje');
+  const campoMusica = $('campo-musica');
+  const musicaNombre = $('musica-nombre');
+  const quitarMusica = $('quitar-musica');
+  const editorError = $('editor-error');
+  const botonGuardar = $('guardar');
+  const LIMITE_MUSICA = 7 * 1024 * 1024;
+  let publicar = null;    // namespace `artifact` cuando está disponible
+  let borrador = null;
+
+  function mostrarError(msg) {
+    editorError.textContent = msg;
+    editorError.hidden = !msg;
+  }
+  function pintarMusica() {
+    if (borrador.musica) {
+      musicaNombre.textContent = borrador.musica.nombre;
+      quitarMusica.hidden = false;
+    } else {
+      musicaNombre.textContent = 'Sin música';
+      quitarMusica.hidden = true;
+    }
+  }
+  function abrirEditor() {
+    borrador = Object.assign({}, CONFIG);
+    campoTitulo.value = CONFIG.titulo;
+    campoMensaje.value = CONFIG.mensaje;
+    const radio = document.querySelector('input[name="modo"][value="' + (CONFIG.modo in MODOS ? CONFIG.modo : 'dia') + '"]');
+    if (radio) radio.checked = true;
+    campoMusica.value = '';
+    pintarMusica();
+    mostrarError('');
+    botonGuardar.disabled = false;
+    botonGuardar.textContent = 'Guardar y publicar';
+    if (!editor.open) editor.showModal();
+  }
+  function cerrarEditor(revertir) {
+    if (revertir) aplicarConfig(CONFIG);
+    if (editor.open) editor.close();
+  }
+
+  // vista previa en vivo mientras se edita
+  campoTitulo.addEventListener('input', () => { borrador.titulo = campoTitulo.value; aplicarTextos(borrador); });
+  campoMensaje.addEventListener('input', () => { borrador.mensaje = campoMensaje.value; aplicarTextos(borrador); });
+  document.querySelectorAll('input[name="modo"]').forEach(r => {
+    r.addEventListener('change', () => { if (r.checked) { borrador.modo = r.value; aplicarModo(r.value); } });
+  });
+  campoMusica.addEventListener('change', () => {
+    const archivo = campoMusica.files && campoMusica.files[0];
+    if (!archivo) return;
+    mostrarError('');
+    if (!archivo.type.startsWith('audio/')) {
+      mostrarError('Ese archivo no es de audio. Probá con un MP3.');
+      campoMusica.value = '';
+      return;
+    }
+    if (archivo.size > LIMITE_MUSICA) {
+      mostrarError('La música pesa ' + (archivo.size / 1048576).toFixed(1) + ' MB y el máximo es 7 MB. Probá con un archivo más corto o más comprimido.');
+      campoMusica.value = '';
+      return;
+    }
+    const lector = new FileReader();
+    lector.onload = () => {
+      borrador.musica = { nombre: archivo.name, dataUrl: lector.result };
+      pintarMusica();
+    };
+    lector.onerror = () => mostrarError('No se pudo leer el archivo.');
+    lector.readAsDataURL(archivo);
+  });
+  quitarMusica.addEventListener('click', () => {
+    borrador.musica = null;
+    campoMusica.value = '';
+    pintarMusica();
+  });
+
+  $('cancelar').addEventListener('click', () => cerrarEditor(true));
+  editor.addEventListener('cancel', e => { e.preventDefault(); cerrarEditor(true); });
+  botonPersonalizar.addEventListener('click', abrirEditor);
+
+  botonGuardar.addEventListener('click', async () => {
+    mostrarError('');
+    const cfg = {
+      titulo: (campoTitulo.value || '').trim().slice(0, 40) || CONFIG_DEFECTO.titulo,
+      mensaje: (campoMensaje.value || '').trim().slice(0, 90) || CONFIG_DEFECTO.mensaje,
+      modo: borrador.modo in MODOS ? borrador.modo : 'dia',
+      musica: borrador.musica,
+      personalizado: true,
+    };
+    botonGuardar.disabled = true;
+    botonGuardar.textContent = 'Guardando…';
+
+    guardarConfigLocal(cfg);
+
+    const link = urlConConfiguracion(cfg);
+    if (navigator.clipboard && window.isSecureContext) {
+      try {
+        await navigator.clipboard.writeText(link);
+      } catch (e) {}
+    }
+
+    if (!publicar) {
+      botonGuardar.textContent = 'Link listo ✓';
+      alert(`Link para compartir:\n${link}`);
+      setTimeout(() => {
+        botonGuardar.disabled = false;
+        botonGuardar.textContent = 'Guardar y publicar';
+        cerrarEditor(false);
+      }, 500);
+      return;
+    }
+
+    try {
+      await publicar.publish(documentoCompleto(cfg));
+      botonGuardar.textContent = 'Guardado ✓';
+    } catch (err) {
+      const codigo = err && err.code;
+      botonGuardar.disabled = false;
+      botonGuardar.textContent = 'Guardar y publicar';
+      if (codigo === 'conflict') {
+        mostrarError('Alguien guardó otra versión hace un momento. La página se va a recargar con esa versión.');
+      } else if (codigo === 'not_writer' || codigo === 'not_granted' || codigo === 'not_declared') {
+        mostrarError('Esta vista es solo de lectura: no tenés permiso para guardar cambios.');
+        publicar = null;
+        botonPersonalizar.hidden = false;
+      } else if (codigo === 'too_large') {
+        mostrarError('La página queda demasiado pesada. Probá con una música más liviana.');
+      } else if (codigo === 'rate_limited') {
+        mostrarError('Demasiados guardados seguidos. Esperá unos segundos y volvé a intentar.');
+      } else {
+        mostrarError('No se pudo guardar. Probá de nuevo en un momento.');
+      }
+    }
+  });
+
+  async function usar(nombre) {
+    try {
+      if (window.claude && typeof window.claude.use === 'function') return await window.claude.use(nombre);
+    } catch (e) {}
+    return null;
+  }
+  (async () => {
+    const params = new URLSearchParams(location.search);
+    const isEditMode = params.get('edit') === '1';
+
+    botonPersonalizar.hidden = false;
+    if (isEditMode) {
+      abrirEditor();
+      return;
+    }
+
+    const [artifact, user] = await Promise.all([usar('artifact'), usar('user')]);
+    if (!artifact) {
+      if (!CONFIG.personalizado) {
+        const mostrarEditor = params.get('title') || params.get('message') || params.get('mode');
+        if (!mostrarEditor) { botonPersonalizar.hidden = false; }
+      }
+      return;
+    }
+    let puedeEditar = true;
+    try {
+      if (user && typeof user.canEdit === 'function') {
+        const r = await user.canEdit();
+        if (r === false) puedeEditar = false;
+      }
+    } catch (e) {}
+    if (!puedeEditar) return;
+    publicar = artifact;
+    botonPersonalizar.hidden = false;
+    if (!CONFIG.personalizado) abrirEditor();
+  })();
+})();
+</script>
+</body>
+</html>
