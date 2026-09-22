@@ -316,16 +316,6 @@
         </fieldset>
       </div>
 
-      <div class="campo">
-        <span class="etiqueta">Música</span>
-        <div class="musica-fila">
-          <label class="boton-archivo">Elegir archivo<input type="file" id="campo-musica" accept="audio/*" hidden></label>
-          <span class="musica-nombre" id="musica-nombre">Sin música</span>
-          <button type="button" class="musica-quitar" id="quitar-musica" hidden>Quitar</button>
-        </div>
-        <p class="ayuda">MP3 o similar, hasta 7 MB. Se reproduce al tocar Música en este navegador.</p>
-      </div>
-
       <p class="editor-error" id="editor-error" hidden></p>
 
       <div class="editor-acciones">
@@ -361,7 +351,7 @@
     titulo: 'Feliz primavera',
     mensaje: 'Tocá la pantalla y mirá cómo florece',
     modo: 'dia',
-    musica: null,          // { nombre, dataUrl }
+    musica: { nombre: 'Fiesta sin fin', url: 'assets/musica.mp3' },
     personalizado: false,
   };
   function leerConfig() {
@@ -1329,14 +1319,6 @@
   const botonMusica = $('musica');
   let audio = null;
   let usuarioPauso = false;
-  function dataUrlABlob(dataUrl) {
-    const [cab, datos] = dataUrl.split(',');
-    const tipo = (cab.match(/data:([^;]+)/) || [])[1] || 'audio/mpeg';
-    const bin = atob(datos);
-    const bytes = new Uint8Array(bin.length);
-    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-    return new Blob([bytes], { type: tipo });
-  }
   function prepararMusica() {
     if (audio) {
       audio.pause();
@@ -1345,16 +1327,13 @@
     audio = null;
     usuarioPauso = false;
     botonMusica.hidden = true;
-    if (!CONFIG.musica || !CONFIG.musica.dataUrl) return;
+    const fuente = CONFIG_DEFECTO.musica.url;
     audio = new Audio();
     audio.loop = true;
     audio.volume = 0.65;
-    audio.addEventListener('error', () => {
-      try { audio.src = URL.createObjectURL(dataUrlABlob(CONFIG.musica.dataUrl)); } catch (e) {}
-    }, { once: true });
     audio.addEventListener('play', () => { botonMusica.textContent = '♪ Pausar'; });
     audio.addEventListener('pause', () => { botonMusica.textContent = '♪ Música'; });
-    audio.src = CONFIG.musica.dataUrl;
+    audio.src = fuente;
     audio.load();
     botonMusica.hidden = false;
   }
@@ -1476,16 +1455,12 @@
   const botonPersonalizar = $('personalizar');
   const campoTitulo = $('campo-titulo');
   const campoMensaje = $('campo-mensaje');
-  const campoMusica = $('campo-musica');
-  const musicaNombre = $('musica-nombre');
-  const quitarMusica = $('quitar-musica');
   const editorError = $('editor-error');
   const botonGuardar = $('guardar');
   const dialogoCompartir = $('compartir');
   const linkCompartir = $('link-compartir');
   const copiarLink = $('copiar-link');
   const cerrarCompartir = $('cerrar-compartir');
-  const LIMITE_MUSICA = 7 * 1024 * 1024;
   let publicar = null;    // namespace `artifact` cuando está disponible
   let borrador = null;
 
@@ -1493,23 +1468,12 @@
     editorError.textContent = msg;
     editorError.hidden = !msg;
   }
-  function pintarMusica() {
-    if (borrador.musica) {
-      musicaNombre.textContent = borrador.musica.nombre;
-      quitarMusica.hidden = false;
-    } else {
-      musicaNombre.textContent = 'Sin música';
-      quitarMusica.hidden = true;
-    }
-  }
   function abrirEditor() {
     borrador = Object.assign({}, CONFIG);
     campoTitulo.value = CONFIG.titulo;
     campoMensaje.value = CONFIG.mensaje;
     const radio = document.querySelector('input[name="modo"][value="' + (CONFIG.modo in MODOS ? CONFIG.modo : 'dia') + '"]');
     if (radio) radio.checked = true;
-    campoMusica.value = '';
-    pintarMusica();
     mostrarError('');
     botonGuardar.disabled = false;
     botonGuardar.textContent = 'Guardar y publicar';
@@ -1526,34 +1490,6 @@
   document.querySelectorAll('input[name="modo"]').forEach(r => {
     r.addEventListener('change', () => { if (r.checked) { borrador.modo = r.value; aplicarModo(r.value); } });
   });
-  campoMusica.addEventListener('change', () => {
-    const archivo = campoMusica.files && campoMusica.files[0];
-    if (!archivo) return;
-    mostrarError('');
-    if (!archivo.type.startsWith('audio/')) {
-      mostrarError('Ese archivo no es de audio. Probá con un MP3.');
-      campoMusica.value = '';
-      return;
-    }
-    if (archivo.size > LIMITE_MUSICA) {
-      mostrarError('La música pesa ' + (archivo.size / 1048576).toFixed(1) + ' MB y el máximo es 7 MB. Probá con un archivo más corto o más comprimido.');
-      campoMusica.value = '';
-      return;
-    }
-    const lector = new FileReader();
-    lector.onload = () => {
-      borrador.musica = { nombre: archivo.name, dataUrl: lector.result };
-      pintarMusica();
-    };
-    lector.onerror = () => mostrarError('No se pudo leer el archivo.');
-    lector.readAsDataURL(archivo);
-  });
-  quitarMusica.addEventListener('click', () => {
-    borrador.musica = null;
-    campoMusica.value = '';
-    pintarMusica();
-  });
-
   $('cancelar').addEventListener('click', () => cerrarEditor(true));
   editor.addEventListener('cancel', e => { e.preventDefault(); cerrarEditor(true); });
   botonPersonalizar.addEventListener('click', abrirEditor);
@@ -1581,7 +1517,7 @@
       titulo: (campoTitulo.value || '').trim().slice(0, 40) || CONFIG_DEFECTO.titulo,
       mensaje: (campoMensaje.value || '').trim().slice(0, 90) || CONFIG_DEFECTO.mensaje,
       modo: borrador.modo in MODOS ? borrador.modo : 'dia',
-      musica: borrador.musica,
+      musica: CONFIG_DEFECTO.musica,
       personalizado: true,
     };
     botonGuardar.disabled = true;
