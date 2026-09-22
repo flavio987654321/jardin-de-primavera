@@ -323,7 +323,7 @@
           <span class="musica-nombre" id="musica-nombre">Sin música</span>
           <button type="button" class="musica-quitar" id="quitar-musica" hidden>Quitar</button>
         </div>
-        <p class="ayuda">MP3 o similar, hasta 7 MB. Empieza a sonar con el primer toque en la pantalla.</p>
+        <p class="ayuda">MP3 o similar, hasta 600 KB para que también viaje dentro del link. Empieza a sonar al tocar Música.</p>
       </div>
 
       <p class="editor-error" id="editor-error" hidden></p>
@@ -383,11 +383,16 @@
       const titulo = params.get('title');
       const mensaje = params.get('message');
       const modo = params.get('mode');
+      const musica = params.get('music');
+      const nombreMusica = params.get('musicName');
       if (titulo) urlCfg.titulo = titulo;
       if (mensaje) urlCfg.mensaje = mensaje;
       if (['dia', 'atardecer', 'noche'].includes(modo)) urlCfg.modo = modo;
+      if (musica && musica.startsWith('data:audio/')) {
+        urlCfg.musica = { nombre: nombreMusica || 'musica', dataUrl: musica };
+      }
       if (params.get('edit') === '1') urlCfg.editMode = true;
-      if (titulo || mensaje || modo) urlCfg.personalizado = true;
+      if (titulo || mensaje || modo || musica) urlCfg.personalizado = true;
     } catch (e) {}
     return Object.assign(base, urlCfg);
   }
@@ -407,6 +412,10 @@
     params.set('title', cfg.titulo || CONFIG_DEFECTO.titulo);
     params.set('message', cfg.mensaje || CONFIG_DEFECTO.mensaje);
     params.set('mode', cfg.modo || 'dia');
+    if (cfg.musica && cfg.musica.dataUrl) {
+      params.set('music', cfg.musica.dataUrl);
+      params.set('musicName', cfg.musica.nombre || 'musica');
+    }
     return `${location.origin}${location.pathname}?${params.toString()}`;
   }
 
@@ -1485,7 +1494,7 @@
   const linkCompartir = $('link-compartir');
   const copiarLink = $('copiar-link');
   const cerrarCompartir = $('cerrar-compartir');
-  const LIMITE_MUSICA = 7 * 1024 * 1024;
+  const LIMITE_MUSICA = 600 * 1024;
   let publicar = null;    // namespace `artifact` cuando está disponible
   let borrador = null;
 
@@ -1536,7 +1545,7 @@
       return;
     }
     if (archivo.size > LIMITE_MUSICA) {
-      mostrarError('La música pesa ' + (archivo.size / 1048576).toFixed(1) + ' MB y el máximo es 7 MB. Probá con un archivo más corto o más comprimido.');
+      mostrarError('La música pesa ' + Math.ceil(archivo.size / 1024) + ' KB y el máximo es 600 KB para poder compartirla dentro del link. Probá con un archivo más corto o más comprimido.');
       campoMusica.value = '';
       return;
     }
