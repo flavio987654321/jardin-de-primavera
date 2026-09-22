@@ -399,6 +399,7 @@
     } catch (e) {}
     CONFIG = Object.assign({}, CONFIG_DEFECTO, cfg);
     aplicarConfig(CONFIG);
+    prepararMusica();
   }
 
   function urlConConfiguracion(cfg) {
@@ -1337,6 +1338,13 @@
     return new Blob([bytes], { type: tipo });
   }
   function prepararMusica() {
+    if (audio) {
+      audio.pause();
+      audio.src = '';
+    }
+    audio = null;
+    usuarioPauso = false;
+    botonMusica.hidden = true;
     if (!CONFIG.musica || !CONFIG.musica.dataUrl) return;
     audio = new Audio();
     audio.loop = true;
@@ -1347,6 +1355,7 @@
     audio.addEventListener('play', () => { botonMusica.textContent = '♪ Pausar'; });
     audio.addEventListener('pause', () => { botonMusica.textContent = '♪ Música'; });
     audio.src = CONFIG.musica.dataUrl;
+    audio.load();
     botonMusica.hidden = false;
   }
   function intentarReproducir() {
